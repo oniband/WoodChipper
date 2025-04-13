@@ -28,7 +28,11 @@ pub fn parse_args(args: Vec<String>) -> [String; 2] {
         panic!("Quitting...");
     }
     if args.len() == 3 {
-        return [args[1].clone(), args[2].to_owned()];
+        if args[2].ends_with("/") {
+            return [args[1].clone(), args[2].clone()];
+        } else {
+            return [args[1].clone(), format!("{}/", args[2].clone())];
+        }
     }
     [args[1].clone(), "./".to_owned()]
 }
@@ -51,6 +55,8 @@ pub struct Instruction {
     pub n: u8,
     pub nn: u8,
     pub nnn: u16,
+    pub first_byte: u8,
+    pub second_byte: u8,
 }
 
 ///Returns a vector of instructions given a vetor of chip8 binary data
@@ -69,6 +75,8 @@ pub fn extract_instructions(bytes: Vec<u8>) -> Vec<Instruction> {
             n: bytes[program_counter + 1] & 0x0F,
             nn: bytes[program_counter + 1],
             nnn: new_opcode & 0x0FFF,
+            first_byte: bytes[program_counter],
+            second_byte: bytes[program_counter + 1],
         };
         instructions.push(new_instruction);
 
@@ -79,4 +87,20 @@ pub fn extract_instructions(bytes: Vec<u8>) -> Vec<Instruction> {
         }
     }
     instructions
+}
+
+pub fn increment_program_counter(program_counter: &mut u16, value: u16) {
+    if (*program_counter + value) > 4095 {
+        *program_counter = (*program_counter + value) - 4096;
+    } else {
+        *program_counter += value;
+    }
+}
+
+pub fn set_program_counter(program_counter: &mut u16, value: u16) {
+    if value > 4095 {
+        panic!("Invalid program counter value!");
+    } else {
+        *program_counter = value;
+    }
 }
